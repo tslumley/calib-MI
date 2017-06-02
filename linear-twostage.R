@@ -1,8 +1,14 @@
 library(missreg3)
 library(survey)
 library(splines)
+library(mitools)
 
 
+estfun.glm<-function (model) 
+{
+    xmat <- model.matrix(model)
+    residuals(model, "working") * model$weights * xmat
+}
 
 
 epsilon<-0.05
@@ -41,13 +47,13 @@ cdes2<-calibrate(des,formula=~(eff1+eff2)*zstrat,calfun="raking")
 p<-vector("list",10)
     
 for(i in 1:10){
-    p4[[i]]<-df
+    p[[i]]<-df
     pred<-predict(impmodel2, newdata=df,se.fit=TRUE)
-    p4[[i]]$predx<- rnorm(nrow(df), pred$fit, sqrt(pred$se.fit^2+pred$residual.scale^2))
+    p[[i]]$predx<- rnorm(nrow(df), pred$fit, sqrt(pred$se.fit^2+pred$residual.scale^2))
 }
-p4list<-imputationList(p4)
-modelmi<-with(p4list, glm(y~x,family=binomial))
-effs<-Reduce("+",lapply(modelmi, estfun))/10
+plist<-imputationList(p)
+modelmi<-with(plist, glm(y~predx))
+effs<-as.data.frame(Reduce("+",lapply(modelmi, estfun.glm))/10)
 names(effs)<-c("mieff1","mieff2")
 df3<-cbind(df,effs)
 
@@ -66,11 +72,11 @@ mz2<-locsc2stg(y~x,~1,xstrata="zstrat",data=df,xs.includes=FALSE,method="direct"
 cat(".")
 flush.console()
 c(
-coef(svyglm(y~x,design=des))[2],
-coef(svyglm(y~x,design=cdes2))[2],
-coef(svyglm(y~x,design=cdesmi))[2],
-summary(mz2)$coef.table2[2,1],
-coef(glm(y~fullx,data=df))[2]
+uncal=coef(svyglm(y~x,design=des))[2],
+imp=coef(svyglm(y~x,design=cdes2))[2],
+mi=coef(svyglm(y~x,design=cdesmi))[2],
+mle=summary(mz2)$coef.table2[2,1],
+census=coef(glm(y~fullx,data=df))[2]
 )}
 
 epsilons<-c(0,0.025,0.05,0.06,0.07,0.08,0.1,0.15)
