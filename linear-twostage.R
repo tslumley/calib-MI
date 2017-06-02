@@ -73,11 +73,12 @@ cat(".")
 flush.console()
 c(
 uncal=coef(svyglm(y~x,design=des))[2],
-imp=coef(svyglm(y~x,design=cdes2))[2],
-mi=coef(svyglm(y~x,design=cdesmi))[2],
+impcal=coef(svyglm(y~x,design=cdes2))[2],
+mical=coef(svyglm(y~x,design=cdesmi))[2],
+    mi=coef(MIcombine(modelmi))[2],
 mle=summary(mz2)$coef.table2[2,1],
 census=coef(glm(y~fullx,data=df))[2]
 )}
 
 epsilons<-c(0,0.025,0.05,0.06,0.07,0.08,0.1,0.15)
-rr2<-lapply(epsilons, function(eps) {print(eps);replicate(1000, one.sim(eps))})
+rr2<-lapply(epsilons, function(eps) {print(eps);replicate(100, one.sim(eps))})
