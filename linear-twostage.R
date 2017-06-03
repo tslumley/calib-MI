@@ -24,7 +24,7 @@ df$fullx<-df$x
 df$insample<-df$id %in% c(which(df$zstrat=="(-Inf,-2.33]"), which(df$zstrat=="(2.33, Inf]"),sample(which(df$zstrat=="(-2.33,2.33]"),200))
 df$x[!df$insample]<-NA
 
-impmodel2<-glm(x~ns(y,3)*zstrat,data=subset(df,insample))
+impmodel2<-glm(x~y+z,data=subset(df,insample))
 
 
 ## single imputation
@@ -81,4 +81,5 @@ census=coef(glm(y~fullx,data=df))[2]
 )}
 
 epsilons<-c(0,0.025,0.05,0.06,0.07,0.08,0.1,0.15)
-rr2<-lapply(epsilons, function(eps) {print(eps);replicate(100, one.sim(eps))})
+rr2<-lapply(epsilons, function(eps) {print(eps);replicate(1000, one.sim(eps))})
+save(rr2,epsilons,file="linear-twostage.rda")
