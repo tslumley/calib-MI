@@ -41,7 +41,7 @@ df2<-cbind(df,eff)
 des<-twophase(id=list(~id,~id), strata=list(NULL,~zstrat), data=df2, subset=~insample)
 
 ## calibrated
-cdes2<-calibrate(des,formula=~(eff1+eff2)*zstrat,calfun="raking")
+cdes2<-calibrate(des,formula=~(eff1+eff2)*zstrat,calfun="raking",epsilon=1e-6)
 
 ## MI
 p<-vector("list",10)
@@ -50,6 +50,7 @@ for(i in 1:10){
     p[[i]]<-df
     pred<-predict(impmodel2, newdata=df,se.fit=TRUE)
     p[[i]]$predx<- rnorm(nrow(df), pred$fit, sqrt(pred$se.fit^2+pred$residual.scale^2))
+    p[[i]]$impdx<-with(p[[i]], ifelse(is.na(x), predx,x))
 }
 plist<-imputationList(p)
 modelmi<-with(plist, glm(y~predx))
@@ -57,9 +58,12 @@ effs<-as.data.frame(Reduce("+",lapply(modelmi, estfun.glm))/10)
 names(effs)<-c("mieff1","mieff2")
 df3<-cbind(df,effs)
 
+modelusemi<-modelmi<-with(plist, glm(y~impdx))
+
+
 des<-twophase(id=list(~id,~id), strata=list(NULL,~zstrat), data=df3, subset=~insample)
 ## calibrated
-cdesmi<-calibrate(des,formula=~(mieff1+mieff2)*zstrat,calfun="raking")
+cdesmi<-calibrate(des,formula=~(mieff1+mieff2)*zstrat,calfun="raking",epsilon=1e-6)
 
 
 ## mle
@@ -75,7 +79,7 @@ c(
 uncal=coef(svyglm(y~x,design=des))[2],
 impcal=coef(svyglm(y~x,design=cdes2))[2],
 mical=coef(svyglm(y~x,design=cdesmi))[2],
-    mi=coef(MIcombine(modelmi))[2],
+    mi=coef(MIcombine(modelusemi))[2],
 mle=summary(mz2)$coef.table2[2,1],
 census=coef(glm(y~fullx,data=df))[2]
 )}
